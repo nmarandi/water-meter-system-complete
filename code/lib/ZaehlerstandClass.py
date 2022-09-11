@@ -191,6 +191,55 @@ class Zaehlerstand:
             print('Get Zaehlerstand done')
         return txt
 
+
+    def getZaehlerstandPOST(self, fileData, simple = True, UsePreValue = False, single = False, ignoreConsistencyCheck = False):
+        open('./image_tmp/original.jpg', "wb").write(fileData)
+
+        txt, logtime = self.LoadFileFromHTTP.saveImage('./image_tmp/original.jpg')
+
+        if len(txt) == 0:
+            if self.AnalogReadOutEnabled:
+                print('Start CutImage, AnalogReadout, DigitalReadout')
+            else:
+                print('Start CutImage, DigitalReadout')            
+            resultcut = self.CutImage.Cut('./image_tmp/original.jpg')
+            self.CutImage.DrawROI('./image_tmp/alg.jpg')  # update ROI
+
+            #resultanalog = [0, 0, 0, 0]
+            #resultdigital = [1, 2, 3, 4, 5]
+            if self.AnalogReadOutEnabled:
+                resultanalog = self.readAnalogNeedle.Readout(resultcut[0], logtime)
+            resultdigital = self.readDigitalDigit.Readout(resultcut[1], logtime)
+            
+            self.akt_nachkomma = 0
+            if self.AnalogReadOutEnabled:
+                self.akt_nachkomma = self.AnalogReadoutToValue(resultanalog)
+            self.akt_vorkomma = self.DigitalReadoutToValue(resultdigital, UsePreValue, self.LastNachkomma, self.akt_nachkomma)
+            self.LoadFileFromHTTP.PostProcessLogImageProcedure(True)
+
+            print('Start Making Zaehlerstand')
+            (error, errortxt) = self.checkConsistency(ignoreConsistencyCheck)
+            self.UpdateLastValues(error)
+            txt = self.MakeReturnValue(error, errortxt, single)
+
+            if not simple:
+                txt = txt + '<p>Aligned Image: <p><img src=/image_tmp/alg.jpg></img><p>'
+                txt = txt + 'Digital Counter: <p>'
+                for i in range(len(resultdigital)):
+                    if resultdigital[i] == 'NaN':
+                        zw = 'NaN'
+                    else:
+                        zw = str(int(resultdigital[i]))
+                    txt += '<img src=/image_tmp/'+  str(resultcut[1][i][0]) + '.jpg></img>' + zw
+                txt = txt + '<p>'
+                if self.AnalogReadOutEnabled:
+                    txt = txt + 'Analog Meter: <p>'
+                    for i in range(len(resultanalog)):
+                        txt += '<img src=/image_tmp/'+  str(resultcut[0][i][0]) + '.jpg></img>' + "{:.1f}".format(resultanalog[i])
+                    txt = txt + '<p>'
+            print('Get Zaehlerstand done')
+        return txt
+
     
     def getZaehlerstandJSON(self, url, simple = True, UsePreValue = False, single = False, ignoreConsistencyCheck = False):
         #txt = ""

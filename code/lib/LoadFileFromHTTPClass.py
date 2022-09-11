@@ -96,3 +96,16 @@ class LoadFileFromHttp:
             speichername = self.log_Image + '/SourceImage_' + logtime + '.jpg'
             copyfile(img_file, speichername)
             self.LastImageSafed = speichername
+
+    def saveImage(self, target):
+        logtime = time.strftime('%Y-%m-%d_%H-%M-%S', time.localtime())
+        self.saveLogImage(target, logtime)
+        if self.VerifyImage(target) == True:
+            image_size = os.stat(target).st_size
+            if image_size > self.MinImageSize:
+                result = ''
+            else:
+                result = 'Error - Imagefile too small. Size ' + str(image_size) + ', min size is ' + str(self.MinImageSize)+ '. Source: ' + str(url)
+        else:
+            result = 'Error - Imagefile is corrupted - Source: ' + str(url)
+        return (result, logtime)

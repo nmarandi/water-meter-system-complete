@@ -3,7 +3,7 @@ from urllib import parse
 import lib.ZaehlerstandClass
 import os
 import subprocess
-
+import cgi, cgitb
 import socketserver
 
 import gc
@@ -114,12 +114,27 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(bytes(result, 'UTF-8'))
             return
+    
+    def do_POST(self):
+        global wasserzaehler
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        form = cgi.FieldStorage(
+                fp=self.rfile,
+                headers=self.headers,
+                environ={'REQUEST_METHOD':'POST',
+                         'CONTENT_TYPE':self.headers['Content-Type'],
+                         })
+        data = form['orig'].file.read()
+        result = wasserzaehler.getZaehlerstandPOST(data)
+        self.end_headers()
+        self.wfile.write(bytes(result, 'UTF-8'))
 
 if __name__ == '__main__':
 
     wasserzaehler = lib.ZaehlerstandClass.Zaehlerstand()
 
-    PORT = 3000
+    PORT = 3300
     with socketserver.TCPServer(("", PORT), SimpleHTTPRequestHandler) as httpd:
         print("Wasserzaehler is serving at port", PORT)
         httpd.serve_forever()
