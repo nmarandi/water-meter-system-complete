@@ -134,7 +134,7 @@ if __name__ == '__main__':
 
     wasserzaehler = lib.ZaehlerstandClass.Zaehlerstand()
 
-    PORT = 3300
+    PORT = 80
     with socketserver.TCPServer(("", PORT), SimpleHTTPRequestHandler) as httpd:
         print("Wasserzaehler is serving at port", PORT)
         httpd.serve_forever()
